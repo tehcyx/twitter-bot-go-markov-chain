@@ -30,6 +30,6 @@ func main() {
 	// Send a Tweet
 	//tweet, resp, err := client.Statuses.Update("just setting up my twttr", nil)
 
-	dict := markov.Train("hallo dies ist ein neuer text, was geht denn so ab hier? hallo peter, schoen dich zu sehen, wie geht es dir?", 10000)
+	dict := markov.Train("Tourists airlifted from snowbound Swiss ski resort. The Swiss Alpine resort of Zermatt airlifted guests by helicopter on Tuesday after heavy snow and a power cut stranded thousands of visitors.", 10000)
 	fmt.Println(dict)
 }
