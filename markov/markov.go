@@ -11,16 +11,22 @@ import (
 	"strings"
 )
 
+// SubDictionary of follow up words and the corresponding factor.
+type SubDictionary map[string]int
+
+// Dictionary of start words with follow ups and the corresponding factor.
+type Dictionary map[string]SubDictionary
+
 // Train from string of words
-func Train(text string, factor int) map[string]map[string]int {
-	dict := make(map[string]map[string]int)
+func Train(text string, factor int) Dictionary {
+	dict := make(Dictionary)
 
 	words := strings.Fields(text)
 
 	for i := 0; i < len(words)-1; i++ {
 		words[i] = strings.ToLower(words[i])
 		if _, prefixAvail := dict[words[i]]; !prefixAvail {
-			dict[words[i]] = make(map[string]int)
+			dict[words[i]] = make(SubDictionary)
 		}
 		if _, suffixAvail := dict[words[i]][words[i+1]]; !suffixAvail {
 			dict[words[i]][words[i+1]] = factor
@@ -32,13 +38,13 @@ func Train(text string, factor int) map[string]map[string]int {
 }
 
 // TrainFromFile takes a file path, reads the file and passes the string to Train
-func TrainFromFile(path string, factor int) map[string]map[string]int {
+func TrainFromFile(path string, factor int) Dictionary {
 	buf, _ := ioutil.ReadFile(path)
 	return Train(string(buf), factor)
 }
 
 // TrainFromFolder takes a path, and passes every text file it finds to TrainFromFile
-func TrainFromFolder(path string, factor int) map[string]map[string]int {
+func TrainFromFolder(path string, factor int) Dictionary {
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		log.Fatal(err)
@@ -49,7 +55,7 @@ func TrainFromFolder(path string, factor int) map[string]map[string]int {
 		log.Fatal(err)
 	}
 
-	dict := make(map[string]map[string]int)
+	dict := make(Dictionary)
 
 	for _, file := range files {
 		match, _ := regexp.MatchString(".*\\.txt$", file.Name())
@@ -65,10 +71,10 @@ func TrainFromFolder(path string, factor int) map[string]map[string]int {
 }
 
 // Generate takes a dictionary, a maximum length and a startword to generate a text based on the inputs
-func Generate(dict map[string]map[string]int, maxLength int, startWord string) string {
+func Generate(dict Dictionary, maxLength int, startWord string) string {
 	var word = ""
 	if startWord == "" {
-		word = pickRandom(dict)
+		word = pickRandom(dict.keys())
 	} else {
 		word = startWord
 	}
@@ -82,7 +88,7 @@ func Generate(dict map[string]map[string]int, maxLength int, startWord string) s
 
 		for k := range dict[word] {
 			if _, ok := dict[word][k]; ok {
-				word = pickRandomFollwup(dict[word])
+				word = pickRandom(dict[word].keys())
 			}
 		}
 		if word == tmp || word == "" {
@@ -127,7 +133,7 @@ func Generate(dict map[string]map[string]int, maxLength int, startWord string) s
 // }
 
 // mergeDict, given two dictionaries merges them into one
-func mergeDict(dict1, dict2 map[string]map[string]int) map[string]map[string]int {
+func mergeDict(dict1, dict2 Dictionary) Dictionary {
 	res := dict1
 	for k := range dict2 {
 		if _, ok := res[k]; ok {
@@ -146,26 +152,39 @@ func mergeDict(dict1, dict2 map[string]map[string]int) map[string]map[string]int
 	return res
 }
 
-// pickRandom takes a dictionary and selects a random key
-func pickRandom(dict map[string]map[string]int) string {
-	keys := make([]string, len(dict))
+func (m Dictionary) keys() []string {
+	keys := make([]string, len(m))
 	i := 0
-	for k := range dict {
+	for k := range m {
 		keys[i] = k
 		i++
 	}
+	return keys
+}
+
+func (m SubDictionary) keys() []string {
+	keys := make([]string, len(m))
+	i := 0
+	for k := range m {
+		keys[i] = k
+		i++
+	}
+	return keys
+}
+
+// pickRandom takes a dictionary and selects a random key
+func pickRandom(keys []string) string {
 	return keys[rand.Intn(len(keys))]
 }
 
-// pickRandomFollwup takes a dictionary and selects a random key
-// because of type specific parameters, same content as above, different paremter...
-// IS THIS NECESSARY?????
-func pickRandomFollwup(dict map[string]int) string {
-	keys := make([]string, len(dict))
-	i := 0
-	for k := range dict {
-		keys[i] = k
-		i++
-	}
-	return keys[rand.Intn(len(keys))]
-}
+// Version with reflection (doesn't work just yet, would be more readable)
+// // pickRandom takes a dictionary and selects a random key
+// func pickRandom(dict map[string]interface{}) string { // see https://golang.org/pkg/reflect/
+// 	keys := make([]string, len(dict))
+// 	i := 0
+// 	for k := range dict {
+// 		keys[i] = k
+// 		i++
+// 	}
+// 	return keys[rand.Intn(len(keys))]
+// }
