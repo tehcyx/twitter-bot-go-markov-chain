@@ -17,6 +17,9 @@ type SubDictionary map[string]int
 // Dictionary of start words with follow ups and the corresponding factor.
 type Dictionary map[string]SubDictionary
 
+// FitnessFunc signature that is allowed to be passed
+type FitnessFunc func(Dictionary, []string) int
+
 // Train from string of words
 func Train(text string, factor int) Dictionary {
 	dict := make(Dictionary)
@@ -24,7 +27,7 @@ func Train(text string, factor int) Dictionary {
 	words := strings.Fields(text)
 
 	for i := 0; i < len(words)-1; i++ {
-		words[i] = strings.ToLower(words[i])
+		//words[i] = strings.ToLower(words[i])
 		if _, prefixAvail := dict[words[i]]; !prefixAvail {
 			dict[words[i]] = make(SubDictionary)
 		}
@@ -118,6 +121,26 @@ func Generate(dict Dictionary, maxLength int, startWord string) string {
 // 	}
 // 	return dict;
 // },
+func AdjustFactors(dict Dictionary, maxLength int, f FitnessFunc) Dictionary {
+	extract := strings.Fields(Generate(dict, maxLength, ""))
+
+	var pairs [][]string
+	i := 0
+	for i < len(extract)-1 {
+		if i == len(extract) {
+			i++
+			continue
+		}
+		pairs = append(pairs, []string{extract[i], extract[i+1]})
+		i++
+	}
+	i = 0
+	for p := range pairs {
+		fact := int((float64(f(dict, pairs[p])) - 0.5) * 2.0)
+		dict = mergeDict(Train(pairs[p][0]+" "+pairs[p][1], fact), dict)
+	}
+	return dict
+}
 
 // bulkAdjustFactors: function(dict, iterations = 1, f = [ undefined ]) {
 // 	if (typeof f == 'undefined' || typeof f[0] == 'undefined') {
@@ -131,19 +154,75 @@ func Generate(dict Dictionary, maxLength int, startWord string) string {
 
 // 	return dict;
 // }
+// BulkAdjustFactors takes a dictionary and runs the number of specified iterations applying the fitness function
+func BulkAdjustFactors(dict Dictionary, iterations int, f []FitnessFunc) Dictionary {
+	if len(f) < 1 {
+		return dict
+	}
+	i := 0
+	for i < iterations {
+		i++
+		j := 0
+		for j < len(f) {
+			dict = AdjustFactors(dict, 10, f[j])
+			j++
+		}
+	}
+
+	return dict
+}
+
+// function fitnessFunc(dict, pair) {
+//     if (typeof pair[1] == 'undefined') {
+//         return -1;
+//     }
+//     if (typeof dict[pair[0]] == 'undefined') {
+//         return -1;
+//     }
+//     return dict[pair[0]][pair[1]];
+// }
+// FitnessFunction apply fitness to dictionary
+func FitnessFunction(dict Dictionary, pair []string) int {
+	if len(pair) < 2 {
+		return -1
+	}
+	if _, ok := dict[pair[0]]; !ok {
+		return -1
+	}
+	return dict[pair[0]][pair[1]]
+}
+
+// function mergeDict(dict1, dict2) {
+//     var dict3 = dict1;
+//     for (var val in dict2) {
+//         if (typeof dict3[val] == 'undefined') {
+//             dict3[val] = dict2[val];
+//         } else {
+//             for (var sval in dict2[val]) {
+//                 if (typeof dict3[val][sval] == 'undefined') {
+//                     dict3[val][sval] = dict2[val][sval];
+//                 } else {
+//                     dict3[val][sval] = dict3[val][sval] + dict2[val][sval];
+//                 }
+//             }
+//         }
+//     }
+//     return dict3;
+// }
 
 // mergeDict, given two dictionaries merges them into one
 func mergeDict(dict1, dict2 Dictionary) Dictionary {
 	res := dict1
 	for k := range dict2 {
-		if _, ok := res[k]; ok {
-			//do something here
+		if _, ok := res[k]; !ok {
 			res[k] = dict2[k]
 		} else {
 			for sk := range dict2[k] {
-				if _, ok := res[k][sk]; ok {
+				if _, ok := res[k][sk]; !ok {
+					res[k] = make(SubDictionary)
 					res[k][sk] = dict2[k][sk]
 				} else {
+					res[k] = make(SubDictionary)
 					res[k][sk] = res[k][sk] + dict2[k][sk]
 				}
 			}
