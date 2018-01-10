@@ -11,10 +11,10 @@ import (
 	"strings"
 )
 
-// SubDictionary of follow up words and the corresponding factor.
+// SubDictionary of follow up words and the cordict3ponding factor.
 type SubDictionary map[string]int
 
-// Dictionary of start words with follow ups and the corresponding factor.
+// Dictionary of start words with follow ups and the cordict3ponding factor.
 type Dictionary map[string]SubDictionary
 
 // FitnessFunc signature that is allowed to be passed
@@ -26,8 +26,9 @@ func Train(text string, factor int) Dictionary {
 
 	words := strings.Fields(text)
 
+	words = cleanUpStrings(words)
+
 	for i := 0; i < len(words)-1; i++ {
-		//words[i] = strings.ToLower(words[i])
 		if _, prefixAvail := dict[words[i]]; !prefixAvail {
 			dict[words[i]] = make(SubDictionary)
 		}
@@ -89,8 +90,8 @@ func Generate(dict Dictionary, maxLength int, startWord string) string {
 
 		tmp := word
 
-		for k := range dict[word] {
-			if _, ok := dict[word][k]; ok {
+		for val := range dict[word] {
+			if _, undefined := dict[word][val]; undefined {
 				word = pickRandom(dict[word].keys())
 			}
 		}
@@ -127,7 +128,7 @@ func AdjustFactors(dict Dictionary, maxLength int, f FitnessFunc) Dictionary {
 	var pairs [][]string
 	i := 0
 	for i < len(extract)-1 {
-		if i == len(extract) {
+		if i >= len(extract) {
 			i++
 			continue
 		}
@@ -183,10 +184,10 @@ func BulkAdjustFactors(dict Dictionary, iterations int, f []FitnessFunc) Diction
 // }
 // FitnessFunction apply fitness to dictionary
 func FitnessFunction(dict Dictionary, pair []string) int {
-	if len(pair) < 2 {
+	if pair[1] == "" {
 		return -1
 	}
-	if _, ok := dict[pair[0]]; !ok {
+	if _, undefined := dict[pair[0]]; !undefined {
 		return -1
 	}
 	return dict[pair[0]][pair[1]]
@@ -212,30 +213,30 @@ func FitnessFunction(dict Dictionary, pair []string) int {
 
 // mergeDict, given two dictionaries merges them into one
 func mergeDict(dict1, dict2 Dictionary) Dictionary {
-	res := dict1
-	for k := range dict2 {
-		if _, ok := res[k]; !ok {
-			res[k] = dict2[k]
+	dict3 := dict1
+	for val := range dict2 {
+		if _, undefined := dict3[val]; !undefined {
+			dict3[val] = dict2[val]
 		} else {
-			for sk := range dict2[k] {
-				if _, ok := res[k][sk]; !ok {
-					res[k] = make(SubDictionary)
-					res[k][sk] = dict2[k][sk]
+			for sval := range dict2[val] {
+				if _, undefined := dict3[val][sval]; !undefined {
+					dict3[val] = make(SubDictionary)
+					dict3[val][sval] = dict2[val][sval]
 				} else {
-					res[k] = make(SubDictionary)
-					res[k][sk] = res[k][sk] + dict2[k][sk]
+					dict3[val] = make(SubDictionary)
+					dict3[val][sval] = dict3[val][sval] + dict2[val][sval]
 				}
 			}
 		}
 	}
-	return res
+	return dict3
 }
 
 func (m Dictionary) keys() []string {
 	keys := make([]string, len(m))
 	i := 0
-	for k := range m {
-		keys[i] = k
+	for val := range m {
+		keys[i] = val
 		i++
 	}
 	return keys
@@ -244,8 +245,8 @@ func (m Dictionary) keys() []string {
 func (m SubDictionary) keys() []string {
 	keys := make([]string, len(m))
 	i := 0
-	for k := range m {
-		keys[i] = k
+	for val := range m {
+		keys[i] = val
 		i++
 	}
 	return keys
@@ -254,6 +255,21 @@ func (m SubDictionary) keys() []string {
 // pickRandom takes a dictionary and selects a random key
 func pickRandom(keys []string) string {
 	return keys[rand.Intn(len(keys))]
+}
+
+func cleanUpStrings(words []string) []string {
+	for val := range words {
+		// remove all non-alphanumeric characters from input
+		reg, err := regexp.Compile("[^a-zA-Z0-9]+")
+		if err != nil {
+			log.Fatal(err)
+		}
+		words[val] = reg.ReplaceAllString(words[val], "")
+
+		// everything lowercase
+		words[val] = strings.ToLower(words[val])
+	}
+	return words
 }
 
 // Version with reflection (doesn't work just yet, would be more readable)

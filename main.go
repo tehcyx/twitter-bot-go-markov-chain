@@ -30,13 +30,13 @@ func main() {
 	// Send a Tweet
 	//tweet, resp, err := client.Statuses.Update("just setting up my twttr", nil)
 
-	dict := markov.TrainFromFolder("training", 10000)
+	dict := markov.TrainFromFolder("training", 10000000)
 
 	// dict := markov.Train("Tourists airlifted from snowbound Swiss ski resort. The Swiss Alpine resort of Zermatt airlifted guests by helicopter on Tuesday after heavy snow and a power cut stranded thousands of visitors.", 10000)
 
 	dict = markov.BulkAdjustFactors(dict, 10000, []markov.FitnessFunc{markov.FitnessFunction})
 
-	message := markov.Generate(dict, 10, "")
+	message := markov.Generate(dict, 20, "")
 	fmt.Println()
 	fmt.Println(message)
 	fmt.Println()
