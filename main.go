@@ -6,7 +6,7 @@ import (
 
 	"github.com/dghubble/go-twitter/twitter"
 	"github.com/dghubble/oauth1"
-	"github.com/tehcyx/gomarkov"
+	"github.com/tehcyx/gomarkov/markov"
 )
 
 func main() {
