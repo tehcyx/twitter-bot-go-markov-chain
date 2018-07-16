@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/tehcyx/twitter-bot-go-markov-chain/markov"
-
 	"github.com/dghubble/go-twitter/twitter"
 	"github.com/dghubble/oauth1"
+	"github.com/tehcyx/gomarkov"
 )
 
 func main() {
