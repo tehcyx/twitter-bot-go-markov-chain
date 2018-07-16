@@ -2,6 +2,7 @@ default: build
 
 build: test cover
 	go build -i -o bin/app
+	cp -r training bin/training
 
 docker:
 	CGO_ENABLED=0 GOOS=linux go build -ldflags "-s" -a -installsuffix cgo -o bin/appdocker
